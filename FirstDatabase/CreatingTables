@@ -1,0 +1,38 @@
+CREATE TABLE USERS(
+    user_id VARCHAR(255),
+    name VARCHAR(255),
+    email VARCHAR(255),
+    country VARCHAR(100),
+    CONSTRAINT PK_USERS PRIMARY KEY (user_id)
+);
+
+CREATE TABLE PROFILE(
+    user_id VARCHAR(255),
+    avatar_url VARCHAR(255),
+    bio TEXT,
+    CONSTRAINT PK_PROFILE PRIMARY KEY (user_id),
+    CONSTRAINT FK_PROFILE_USER FOREIGN KEY (user_id) REFERENCES USERS(user_id)
+);
+
+CREATE TABLE SUBSCRIPTION(
+    subscription_id VARCHAR(255),
+    user_id VARCHAR(255),
+    plan_details VARCHAR(255),
+    price DECIMAL(10, 2),
+    CONSTRAINT PK_SUBSCRIPTION PRIMARY KEY (subscription_id),
+    CONSTRAINT FK_SUBSCRIPTION_USER PRIMARY KEY (user_id)
+);
+
+CREATE TABLE RATING(
+    rating_id VARCHAR(255),
+    user_id VARCHAR(255),
+    content_id VARCHAR(255),
+    scale_id VARCHAR(255),
+    score DECIMAL(2, 1),
+    created_at DATETIME,
+    review_text TEXT,
+    CONSTRAINT PK_RATING PRIMARY KEY (rating_id),
+    CONSTRAINT FK_RATING_USER FOREIGN KEY (user_id) REFERENCES USERS(user_id),
+    CONSTRAINT FK_RATING_CONTENT FOREIGN KEY (scale_id) REFERENCES CONTENT(content_id),
+    CONSTRAINT FK_RATING_SCALE FOREIGN KEY (scale_id) REFERENCES RATING_SCALE(scale_id)
+);
