@@ -137,3 +137,58 @@ CREATE TABLE MOVIE_AWARD(
     CONSTRAINT FK_MOVIE_AWARD_CONTENT FOREIGN KEY (content_id) REFERENCES CONTENT(content_id),
     CONSTRAINT FK_MOVIE_AWARD_AWARD FOREIGN KEY (award_id) REFERENCES AWARD(award_id)
 );
+
+------------------------------------------------------------------------------------------------------
+
+CREATE TABLE SONGS(
+    song_id VARCHAR(255),
+    album_id VARCHAR(255),
+    genre_id VARCHAR(255),
+    title VARCHAR(255),
+    duration INT,
+    screen_time INT,
+    CONSTRAINT PK_SONGS PRIMARY KEY (song_id),
+    CONSTRAINT FK_SONGS_ALBUM FOREIGN KEY (album_id) REFERENCES ALBUM(album_id),
+    CONSTRAINT FK_SONGS_GENRE FOREIGN KEY (genre_id) REFERENCES GENRE(genre_id)
+);
+
+CREATE TABLE ALBUM(
+    album_id VARCHAR(255),
+    artist_id VARCHAR(255),
+    genre_id VARCHAR(255),
+    title VARCHAR(255),
+    CONSTRAINT PK_ALBUM PRIMARY KEY (album_id),
+    CONSTRAINT FK_ALBUM_ARTIST FOREIGN KEY (artist_id) REFERENCES ARTIST(artist_id),
+    CONSTRAINT FK_ALBUM_GENRE FOREIGN KEY (genre_id) REFERENCES GENRE(genre_id)
+);
+
+CREATE TABLE GENRE(
+    genre_id VARCHAR(255),
+    name VARCHAR(255),
+    CONSTRAINT PK_GENRE PRIMARY KEY (genre_id)
+);
+
+CREATE TABLE ARTIST(
+    artist_id VARCHAR(255),
+    stage_name VARCHAR(255),
+    date_of_birth DATETIME,
+    CONSTRAINT PK_ARTIST PRIMARY KEY (artist_id)
+);
+
+CREATE TABLE SONGS_PRODUCER(
+    song_id VARCHAR(255),
+    producer_id VARCHAR(255),
+    CONSTRAINT FK_SONGS_PRODUCER_SONGS FOREIGN KEY (song_id) REFERENCES SONGS(song_id),
+    CONSTRAINT FK_SONGS_PRODUCER_PRODUCER FOREIGN KEY (producer_id) REFERENCES PRODUCER(producer_id)
+);
+
+CREATE TABLE PRODUCER(
+    producer_id VARCHAR(255),
+    name VARCHAR(255),
+    email VARCHAR(255),
+    CONSTRAINT PK_PRODUCER PRIMARY KEY (producer_id)
+);
+
+ALTER TABLE SONGS ADD COLUMN title VARCHAR(255);
+ALTER TABLE SONGS ADD COLUMN duration INT;
+ALTER TABLE SONGS ADD COLUMN screen_time INT;
