@@ -1,4 +1,5 @@
 import java.sql.*;
+import java.util.Random;
 
 public class JDBCExample {
 
@@ -10,19 +11,16 @@ public class JDBCExample {
         url = System.getenv("DB_URL");
         user = System.getenv("DB_USER");
         password = System.getenv("DB_PASSWORD");
-
-        // DeleteUsers(15, false);
-//        DeleteUsers(0, true);
-//        DeleteRoles(0, true);
-//        PopulateDatabase();
-//        Question1();
-//        Question2();
-
-        CreateUserRole(0, 1);
+        // PopulateDatabase();
+        Question1();
+        Question2();
     }
 
     private static void PopulateDatabase()
     {
+        DeleteUsers(0, true);
+        DeleteRoles(0, true);
+        DeleteUserRoles(0, 0, true);
         for (int i = 0; i < 20; i++)
         {
             CreateUser("user" + i, "user" + i + "@gmail.com", "user" + i + "password");
@@ -31,6 +29,12 @@ public class JDBCExample {
         for (int i = 0; i < 5; i++)
         {
             CreateRole("role" + i);
+        }
+
+        Random rnd = new Random();
+        for (int i = 0; i < 50; i++)
+        {
+            CreateUserRole(rnd.nextInt(20) + 1, rnd.nextInt(5) + 1);
         }
     }
 
@@ -148,16 +152,13 @@ public class JDBCExample {
         }
     }
 
-    public static void DeleteRoles(int id, Boolean allRoles)
+    public static void DeleteUserRoles(int user_id, int role_id, Boolean allUserRoles)
     {
         try (Connection conn = DriverManager.getConnection(url, user, password)) {
             System.out.println("Connected to the database");
 
-            // ─────────────────────────────────────────
-            // Delete user with id or all Roles
-            // ─────────────────────────────────────────
-            if (!allRoles) {
-                String sql = "DELETE FROM roles WHERE id = " + id;
+            if (!allUserRoles) {
+                String sql = "DELETE FROM user_roles WHERE id = (" + user_id + "," + role_id + ")";
                 try (PreparedStatement deleteRolestatement = conn.prepareStatement(sql)) {
                     int numberOfRowsDeleted = deleteRolestatement.executeUpdate();
                     System.out.println(numberOfRowsDeleted + " rows deleted from roles");
@@ -175,10 +176,10 @@ public class JDBCExample {
                 }
 
                 // Truncate the table
-                String truncateTableSQL = "TRUNCATE TABLE roles";
+                String truncateTableSQL = "TRUNCATE TABLE user_roles";
                 try (Statement truncateTableStatement = conn.createStatement()) {
                     truncateTableStatement.execute(truncateTableSQL);
-                    System.out.println("Table 'Roles' truncated.");
+                    System.out.println("Table 'User Roles' truncated.");
                 }
 
                 // Enable foreign key checks
@@ -231,13 +232,84 @@ public class JDBCExample {
     {
         try (Connection conn = DriverManager.getConnection(url, user, password)) {
             System.out.println("Connected to the database");
-            String sql = "INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)";
-            try (PreparedStatement statement = conn.prepareStatement(sql)) {
-                statement.setInt(1 ,userId);
+
+            String sqlSelect = "SELECT * FROM user_roles WHERE user_id = ? AND role_id = ?";
+            try (PreparedStatement statement = conn.prepareStatement(sqlSelect))
+            {
+                statement.setInt(1, userId);
                 statement.setInt(2, roleId);
-                statement.executeUpdate();
-                System.out.println("Data inserted successfully.");
+                try (ResultSet rs = statement.executeQuery()) {
+
+                    if (rs.next()) {
+                        // User role already exists
+                        System.out.println(
+                                "User role with user_id = "
+                                        + userId
+                                        + " and role_id = "
+                                        + roleId
+                                        + " already exists.");
+                    } else {
+                        // User role does not exist, so insert it
+                        String sqlInsert = "INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)";
+                        try (PreparedStatement insertStatement = conn.prepareStatement(sqlInsert)) {
+                            insertStatement.setInt(1, userId);
+                            insertStatement.setInt(2, roleId);
+                            insertStatement.executeUpdate();
+                            System.out.println("Data inserted successfully.");
+                        }
+                    }
+                }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void DeleteRoles(int id, Boolean allRoles)
+    {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            System.out.println("Connected to the database");
+
+            // ─────────────────────────────────────────
+            // Delete user with id or all Roles
+            // ─────────────────────────────────────────
+            if (!allRoles) {
+                String sql = "DELETE FROM roles WHERE id = " + id;
+                try (PreparedStatement deleteRolestatement = conn.prepareStatement(sql)) {
+                    int numberOfRowsDeleted = deleteRolestatement.executeUpdate();
+                    System.out.println(numberOfRowsDeleted + " rows deleted from roles");
+                }
+            }
+            else {
+                // Disable auto-commit to start a transaction
+                conn.setAutoCommit(false);
+
+                // Disable foreign key checks
+                String disableForeignKeyChecksSQL = "SET FOREIGN_KEY_CHECKS = 0";
+                try (Statement disableForeignKeyChecksStatement = conn.createStatement()) {
+                    disableForeignKeyChecksStatement.execute(disableForeignKeyChecksSQL);
+                    System.out.println("Foreign key checks disabled.");
+                }
+
+                // Truncate the table
+                String truncateTableSQL = "TRUNCATE TABLE roles";
+                try (Statement truncateTableStatement = conn.createStatement()) {
+                    truncateTableStatement.execute(truncateTableSQL);
+                    System.out.println("Table 'Roles' truncated.");
+                }
+
+                // Enable foreign key checks
+                String enableForeignKeyChecksSQL = "SET FOREIGN_KEY_CHECKS = 1";
+                try (Statement enableForeignKeyChecksStatement = conn.createStatement()) {
+                    enableForeignKeyChecksStatement.execute(enableForeignKeyChecksSQL);
+                    System.out.println("Foreign key checks enabled.");
+                }
+
+                // Commit the transaction
+                conn.commit();
+                System.out.println("Transaction committed successfully.");
+            }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -252,13 +324,13 @@ public class JDBCExample {
             // Query all users and print them
             // ─────────────────────────────────────────
 
-            String selectSql = "SELECT id, name, email FROM users";
+            String selectSql = "SELECT id, name, email FROM users ORDER BY created_at DESC";
 
             try (
                     Statement selectStmt = conn.createStatement();
                     ResultSet rs = selectStmt.executeQuery(selectSql)
             ) {
-                System.out.println("\n─ Users in DB ─");
+                System.out.println("\n─ Question 1: Users in DB ─");
 
                 while (rs.next()) {
                     long id = rs.getLong("id");
@@ -279,26 +351,29 @@ public class JDBCExample {
             System.out.println("Connected to the database");
 
             // ─────────────────────────────────────────
-            // Query all users and print them
+            // Query all distics roles and print them
             // ─────────────────────────────────────────
 
-            String selectSql = "SELECT id, role_name FROM roles";
+            String selectSql = "SELECT DISTINCT role_name FROM roles ORDER BY role_name";
 
             try (
                     Statement selectStmt = conn.createStatement();
                     ResultSet rs = selectStmt.executeQuery(selectSql)
             ) {
-                System.out.println("\n─ Roles in DB ─");
+                System.out.println("\n─ Question 2: Roles in DB ─");
 
                 while (rs.next()) {
-                    long id = rs.getLong("id");
-                    String name = rs.getString("role_name");
-
-                    System.out.printf("[%d] %-20s %n", id, name);
+                    String roleName = rs.getString("role_name");
+                    System.out.printf("%s%n", roleName);
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void Question3()
+    {
+        
     }
 }
