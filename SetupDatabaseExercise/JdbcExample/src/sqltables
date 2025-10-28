@@ -1,18 +1,16 @@
 CREATE TABLE users (
-id INT PRIMARY KEY AUTO_INCREMENT,
-name VARCHAR(100) NOT NULL,
-email VARCHAR(100) UNIQUE NOT NULL
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-ALTER TABLE users ADD COLUMN password VARCHAR(255) NOT NULL;
-ALTER TABLE users ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
 
 CREATE TABLE roles (
     id INT PRIMARY KEY AUTO_INCREMENT,
     role_name VARCHAR(100) NOT NULL
 );
 
-DROP TABLE user_roles;
 CREATE TABLE user_roles (
     user_id INT NOT NULL,
     role_id INT NOT NULL,
@@ -24,3 +22,40 @@ CREATE TABLE user_roles (
 SELECT * FROM users WHERE id = 1;
 SELECT * FROM roles WHERE id = 2;
 INSERT INTO user_roles (user_id, role_id) VALUES (1, 2);
+
+SELECT id, name, email FROM users ORDER BY created_at DESC;
+SELECT DISTINCT role_name FROM roles ORDER BY role_name;
+
+SELECT users.name, roles.role_name FROM users
+INNER JOIN user_roles on users.id = user_roles.user_id
+INNER JOIN roles on user_roles.role_id = roles.id
+ORDER BY users.name;
+
+SELECT users.name FROM users
+INNER JOIN user_roles on users.id = user_roles.user_id
+INNER JOIN roles on user_roles.role_id = roles.id
+GROUP BY users.name
+HAVING COUNT(roles.role_name) > 1;
+
+SELECT roles.role_name, COUNT(users.id) FROM roles
+JOIN user_roles on roles.id = user_roles.role_id
+JOIN users on user_roles.role_id = users.id
+GROUP BY roles.role_name;
+
+SELECT COUNT(DISTINCT roles.role_name) FROM roles
+INNER JOIN user_roles ON roles.id = user_roles.role_id
+INNER JOIN users ON user_roles.user_id = users.id
+WHERE users.created_at >= CURRENT_TIMESTAMP - INTERVAL 30 DAY;
+
+SELECT role_name FROM users
+JOIN user_roles ON users.id = user_roles.user_id
+JOIN roles on roles.id = user_roles.role_id
+GROUP BY roles.role_name
+ORDER BY COUNT(DISTINCT users.name) DESC
+LIMIT 1;
+
+SELECT role_name, COUNT(DISTINCT users.name) FROM users
+JOIN user_roles ON users.id = user_roles.user_id
+JOIN roles on roles.id = user_roles.role_id
+GROUP BY roles.role_name
+ORDER BY COUNT(DISTINCT users.name) DESC;

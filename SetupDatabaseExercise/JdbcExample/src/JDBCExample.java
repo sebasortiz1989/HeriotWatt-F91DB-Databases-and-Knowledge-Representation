@@ -14,6 +14,11 @@ public class JDBCExample {
         // PopulateDatabase();
         Question1();
         Question2();
+        Question3();
+        Question4();
+        Question5();
+        Question6();
+        Question7();
     }
 
     private static void PopulateDatabase()
@@ -321,7 +326,7 @@ public class JDBCExample {
             System.out.println("Connected to the database");
 
             // ─────────────────────────────────────────
-            // Query all users and print them
+            // List the id, first_name, and email of all users, ordered by created_at descending.
             // ─────────────────────────────────────────
 
             String selectSql = "SELECT id, name, email FROM users ORDER BY created_at DESC";
@@ -351,7 +356,7 @@ public class JDBCExample {
             System.out.println("Connected to the database");
 
             // ─────────────────────────────────────────
-            // Query all distics roles and print them
+            // List all distinct role names (alphabetical order).
             // ─────────────────────────────────────────
 
             String selectSql = "SELECT DISTINCT role_name FROM roles ORDER BY role_name";
@@ -374,6 +379,156 @@ public class JDBCExample {
 
     public static void Question3()
     {
-        
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            System.out.println("Connected to the database");
+
+            // ─────────────────────────────────────────
+            // Show each user’s full name alongside every role assigned to them (tables: users, user_roles, roles).
+            // ─────────────────────────────────────────
+
+            String selectSql = "SELECT users.name, roles.role_name FROM users\n" +
+                    "INNER JOIN user_roles on users.id = user_roles.user_id\n" +
+                    "INNER JOIN roles on user_roles.role_id = roles.id\n" +
+                    "ORDER BY users.name;";
+
+            try (
+                    Statement selectStmt = conn.createStatement();
+                    ResultSet rs = selectStmt.executeQuery(selectSql)
+            ) {
+                System.out.println("\n─ Question 3: Users and Roles in DB ─");
+
+                while (rs.next()) {
+                    String userName = rs.getString("name");
+                    String roleName = rs.getString("role_name");
+                    System.out.printf("%s %s%n", userName, roleName);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void Question4()
+    {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            System.out.println("Connected to the database");
+
+            // ─────────────────────────────────────────
+            // Show full names of users who have more than one role (GROUP BY + HAVING COUNT(*) > 1).
+            // ─────────────────────────────────────────
+
+            String selectSql = "SELECT users.name FROM users\n" +
+                    "INNER JOIN user_roles on users.id = user_roles.user_id\n" +
+                    "INNER JOIN roles on user_roles.role_id = roles.id\n" +
+                    "GROUP BY users.name\n" +
+                    "HAVING COUNT(roles.role_name) > 1";
+
+            try (
+                    Statement selectStmt = conn.createStatement();
+                    ResultSet rs = selectStmt.executeQuery(selectSql)
+            ) {
+                System.out.println("\n─ Question 4 ─");
+
+                while (rs.next()) {
+                    String userName = rs.getString("name");
+                    System.out.printf("%s%n", userName);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void Question5()
+    {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            System.out.println("Connected to the database");
+
+            // ─────────────────────────────────────────
+            // For each role, return the role name and the number of users who have that role (COUNT(*) + GROUP BY).
+            // ─────────────────────────────────────────
+
+            String selectSql = "SELECT roles.role_name, COUNT(users.id) FROM roles\n" +
+                    "INNER JOIN user_roles on roles.id = user_roles.role_id\n" +
+                    "INNER JOIN users on user_roles.role_id = users.id\n" +
+                    "GROUP BY roles.role_name";
+
+            try (
+                    Statement selectStmt = conn.createStatement();
+                    ResultSet rs = selectStmt.executeQuery(selectSql)
+            ) {
+                System.out.println("\n─ Question 5 ─");
+
+                while (rs.next()) {
+                    String rolename = rs.getString("role_name");
+                    int count = rs.getInt("COUNT(users.id)");
+                    System.out.printf("%s %d%n", rolename, count);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void Question6()
+    {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            System.out.println("Connected to the database");
+
+            // ─────────────────────────────────────────
+            // Count how many distinct roles are assigned to users created in the last 30 days.
+            // ─────────────────────────────────────────
+
+            String selectSql = "SELECT COUNT(DISTINCT roles.role_name) FROM roles\n" +
+                    "INNER JOIN user_roles ON roles.id = user_roles.role_id\n" +
+                    "INNER JOIN users ON user_roles.user_id = users.id\n" +
+                    "WHERE users.created_at >= CURRENT_TIMESTAMP - INTERVAL 30 DAY;";
+
+            try (
+                    Statement selectStmt = conn.createStatement();
+                    ResultSet rs = selectStmt.executeQuery(selectSql)
+            ) {
+                System.out.println("\n─ Question 6 ─");
+
+                while (rs.next()) {
+                    int count = rs.getInt("COUNT(DISTINCT roles.role_name)");
+                    System.out.printf("%d%n", count);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void Question7()
+    {
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            System.out.println("Connected to the database");
+
+            // ─────────────────────────────────────────
+            // Return the role name(s) with the highest user count.
+            // ─────────────────────────────────────────
+
+            String selectSql = "SELECT role_name FROM users\n" +
+                    "JOIN user_roles ON users.id = user_roles.user_id\n" +
+                    "JOIN roles on roles.id = user_roles.role_id\n" +
+                    "GROUP BY roles.role_name\n" +
+                    "ORDER BY COUNT(DISTINCT users.name) DESC\n" +
+                    "LIMIT 1;";
+
+            try (
+                    Statement selectStmt = conn.createStatement();
+                    ResultSet rs = selectStmt.executeQuery(selectSql)
+            ) {
+                System.out.println("\n─ Question 7 ─");
+
+                while (rs.next()) {
+                    String roleName = rs.getString("role_name");
+                    System.out.printf("%s%n", roleName);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }
